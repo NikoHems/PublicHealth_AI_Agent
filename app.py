@@ -1,40 +1,66 @@
+import os
 import streamlit as st
-from main import filtered_df, scenario_percentages, run_conversation, conversation_history
 import math
+import pandas as pd
+from dotenv import load_dotenv
+import datetime
 
-# -------------------------------
-# Streamlit UI Setup
-# -------------------------------
+# Load environment variables from a .env file if present.
+load_dotenv()
+
+# Ensure the API key is set via environment variable.
+if "OPENAI_API_KEY" not in os.environ:
+    st.error("OPENAI_API_KEY not found. Please set it in your environment or in a .env file.")
+    st.stop()
+
+from main import filtered_df, scenario_percentages, create_agents, run_conversation
 
 st.title("Epidemiology Data Analysis Tool")
 st.sidebar.header("Settings")
 
-# Allow the user to select a scenario percentage.
+# Toggle between normal and manipulated datasets.
+dataset_option = st.sidebar.radio("Select Dataset", ("Normal", "Incomplete"))
+
 selected_scenario = st.sidebar.selectbox(
     "Select Scenario Percentage:",
     [int(pct * 100) for pct in scenario_percentages]
 )
-
-# Calculate the number of rows based on the selected scenario.
 selected_pct = selected_scenario / 100
-num_rows = math.ceil(len(filtered_df) * selected_pct)
-snippet_df = filtered_df.head(num_rows)
+
+# Load the dataset based on the selected option.
+if dataset_option == "Normal":
+    st.sidebar.info("Using the normal dataset.")
+    base_df = filtered_df
+else:
+    st.sidebar.info("Using the manipulated dataset.")
+    base_df = pd.read_csv("germany_epidemiology_data_noisy_incomplete.csv")
+
+# Slice data according to the chosen scenario percentage.
+num_rows = math.ceil(len(base_df) * selected_pct)
+snippet_df = base_df.head(num_rows)
 data_snippet = snippet_df.to_csv(index=False)
 
-# Display a preview of the data.
 st.subheader(f"Data Preview ({selected_scenario}% of data)")
 st.dataframe(snippet_df.head(5))
 
-# Display the conversation transcript.
 st.subheader("Conversation Transcript")
 
-# Run the conversation and generate responses.
-conversation_history, mediator_response = run_conversation(data_snippet, conversation_history)
+# Create conversation agents.
+agents, evaluator = create_agents()
+conversation_history, evaluation = run_conversation(
+    data_snippet, "Initial conversation transcript:\n\n", agents, evaluator
+)
 
-# Show the mediator's final response.
-st.subheader("Mediator's Final Response")
-st.markdown(f"**Mediator:** {mediator_response}")
+# Generate a timestamp for the filename.
+timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+filename = f"conversation_transcript_{timestamp}.txt"
 
-# Show the full conversation transcript.
+# Save the conversation transcript with a unique filename.
+with open(filename, "w") as file:
+    file.write(conversation_history)
+
+st.subheader("Final Evaluation")
+st.markdown(f"**Final Evaluation:** {evaluation}")
+
 st.subheader("Full Conversation Transcript")
 st.markdown(conversation_history)
