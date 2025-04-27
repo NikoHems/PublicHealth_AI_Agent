@@ -53,7 +53,7 @@ conversation_history, evaluation = run_conversation(
 
 # Generate a timestamp for the filename.
 timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-filename = f"conversation_transcript_{timestamp}.txt"
+filename = f"conversation_transcript_{selected_scenario}pct_{timestamp}.txt"
 
 # Save the conversation transcript with a unique filename.
 with open(filename, "w") as file:

@@ -47,14 +47,14 @@ class ConversationAgent:
     """
     Represents a conversation agent that generates responses based on role-specific instructions.
     """
-    def __init__(self, name: str, role_instruction: str, model_name: str = "gpt-4o", temperature: float = 0.7):
+    def __init__(self, name: str, role_instruction: str, model_name: str = "gpt-4o-mini", temperature: float = 0.7):
         """
         Initializes a ConversationAgent.
     
         Args:
             name (str): The agent's name.
             role_instruction (str): Role instructions including directives to engage with colleagues.
-            model_name (str, optional): The LLM model name. Defaults to "gpt-4o".
+            model_name (str, optional): The LLM model name. Defaults to "gpt-4o-mini".
             temperature (float, optional): Sampling temperature for the LLM. Defaults to 0.7.
         """
         self.name = name
@@ -88,12 +88,12 @@ class EvaluatorAgent:
     It produces a final evaluation summary that identifies which agents are most consistent with the data,
     and then decides whether a consensus was reached.
     """
-    def __init__(self, model_name: str = "gpt-4o", temperature: float = 0.7):
+    def __init__(self, model_name: str = "gpt-4o-mini", temperature: float = 0.7):
         """
         Initializes the EvaluatorAgent.
     
         Args:
-            model_name (str, optional): The LLM model name. Defaults to "gpt-4o".
+            model_name (str, optional): The LLM model name. Defaults to "gpt-4o-mini".
             temperature (float, optional): Sampling temperature for the LLM. Defaults to 0.7.
         """
         prompt = PromptTemplate(
@@ -139,7 +139,7 @@ def create_agents():
             name="Epidemiologist",
             role_instruction=(
                 "You are an experienced epidemiologist. Analyze the data and respond directly to your colleagues’ arguments. "
-                "Vary your response length between 10 and 100 words. If you have nothing new to add, state 'I remain silent this round'. "
+                "Vary your response length between 10 and 100 words. If you have nothing new to add, state 'I remain silent this round', be sure to only use this rarely and try to contribute if you can. "
                 "Challenge points you disagree with using evidence when possible."
             )
         ),
@@ -147,21 +147,21 @@ def create_agents():
             name="Public Health Worker",
             role_instruction=(
                 "You are a pragmatic public health worker. Engage with your colleagues by offering counterpoints and defending your proposals. "
-                "Your response should vary between 10 and 100 words. If you have nothing new to add, state 'I remain silent this round'."
+                "Your response should vary between 10 and 100 words. If you have nothing new to add, state 'I remain silent this round', be sure to only use this rarely and try to contribute if you can."
             )
         ),
         ConversationAgent(
             name="Medical Doctor",
             role_instruction=(
                 "You are a medical doctor focusing on clinical risks. Respond directly to your peers with evidence-based counterpoints. "
-                "Keep your response between 10 and 100 words. If you have nothing new to add, state 'I remain silent this round'."
+                "Keep your response between 10 and 100 words. If you have nothing new to add, state 'I remain silent this round', be sure to only use this rarely and try to contribute if you can."
             )
         ),
         ConversationAgent(
             name="Public Health Worker (Cautious)",
             role_instruction=(
                 "You are a public health worker who is extremely cautious about imposing restrictions. Argue that measures should only be taken after a clear threshold is crossed. "
-                "Respond directly to others’ points using 10 to 100 words. If you have nothing new to add, state 'I remain silent this round'."
+                "Respond directly to others’ points using 10 to 100 words. If you have nothing new to add, state 'I remain silent this round', be sure to only use this rarely and try to contribute if you can."
             )
         ),
         ConversationAgent(
@@ -215,7 +215,7 @@ def run_conversation(data_snippet: str, conversation_history: str, agents, evalu
             
             # Force a non-silent response in round 1.
             if round_num == 1 and response.lower() == "i remain silent this round":
-                modified_history = conversation_history + "\nNote: In Round 1, you must provide an active contribution. Please elaborate."
+                modified_history = conversation_history + "\nNote: In Round 1, you must provide an active contribution. Silence is not allowed. Elaborate your thought."
                 response_retry = agent.get_response(data_snippet, modified_history)
                 if response_retry.lower() != "i remain silent this round":
                     response = response_retry
